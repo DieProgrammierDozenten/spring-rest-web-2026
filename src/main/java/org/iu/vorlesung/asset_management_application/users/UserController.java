@@ -1,8 +1,14 @@
 package org.iu.vorlesung.asset_management_application.users;
 
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import org.iu.vorlesung.asset_management_application.assets.Asset;
+import org.iu.vorlesung.asset_management_application.assets.AssetResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -28,8 +34,13 @@ public class UserController {
      * Endpunkts "/" (leerer String) mit einem HTTP-GET aufgerufen werden soll.
      */
     @GetMapping("")
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponse> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserResponse> response = new ArrayList<>();
+        for (User user : users) {
+            response.add(toResponse(user));
+        }
+        return response;
     }
 
     /*
@@ -39,8 +50,10 @@ public class UserController {
      * die Methode "getUserById()" mit dem Parameter id = 2 aufgerufen.
      */
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable Long id) {
-        return userRepository.findById(id).orElse(null);
+    public UserResponse getUserById(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User mit ID " + id + " nicht gefunden"));
+        return toResponse(user);
     }
 
     /*
@@ -48,8 +61,11 @@ public class UserController {
      * Methode nur bei HTTP-POST-Aufrufen ausgeführt.
      */
     @PostMapping("")
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse createUser(@Valid @RequestBody UserRequest request) {
+        User user = new User(request.name());
+        User saved = userRepository.save(user);
+        return toResponse(saved);
     }
 
     /*
@@ -59,5 +75,13 @@ public class UserController {
     @DeleteMapping("/{id}")
     public void deleteUserById(@PathVariable Long id) {
         userRepository.deleteById(id);
+    }
+
+    private UserResponse toResponse(User user) {
+        List<AssetResponse> assetResponses = new ArrayList<>();
+        for (Asset asset : user.getAssets()) {
+            assetResponses.add(new AssetResponse(asset.getId(), asset.getName(), asset.getType(), user.getName()));
+        }
+        return new UserResponse(user.getId(), user.getName(), assetResponses);
     }
 }
