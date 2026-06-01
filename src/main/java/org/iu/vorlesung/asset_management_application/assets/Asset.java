@@ -2,6 +2,8 @@ package org.iu.vorlesung.asset_management_application.assets;
 
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.iu.vorlesung.asset_management_application.users.User;
 import org.jspecify.annotations.NonNull;
 
@@ -25,6 +27,11 @@ public class Asset {
      */
     @ManyToOne
     @JoinColumn(name = "owner_id")
+    /*
+     * Wird ein Nutzer gelöscht, sollen die Assets wieder "frei" werden. Dazu kann über
+     * die @OnDelete-Annotation die Aktion "SET_NULL" definiert werden.
+     */
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     private User owner;
 
     public Asset() {
